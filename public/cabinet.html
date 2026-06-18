@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GalaLMur — Мой кабинет</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="cabinet-header">
+        <span class="logo">GalaLMur — Мой кабинет</span>
+        <div>
+            <a href="/">← В каталог</a>
+            <a href="#" onclick="logout()" style="margin-left:20px;">Выйти</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 class="cabinet-title">Мой кабинет</h2>
+        
+        <div class="stats-row" id="statsRow">
+            <div class="stat-card"><h3 id="statOrders">-</h3><p>Всего заказов</p></div>
+            <div class="stat-card"><h3 id="statPaid">-</h3><p>Оплачено</p></div>
+            <div class="stat-card"><h3 id="statReturns">-</h3><p>Возвратов</p></div>
+        </div>
+        
+        <div class="profile-card" id="profileCard">
+            <h3>Мои данные</h3>
+            <p><strong>Имя:</strong> <span id="profileName">-</span></p>
+            <p><strong>Email:</strong> <span id="profileEmail">-</span></p>
+            <p><strong>Телефон:</strong> <span id="profilePhone">-</span></p>
+        </div>
+
+        <div class="top-nav">
+            <button class="btn-add" onclick="openAddDressModal()">+ Добавить наряд</button>
+            <a href="cart.html" class="btn-outline">🛒 Корзина</a>
+            <a href="purchases.html" class="btn-outline">📦 Мои покупки</a>
+            <a href="#" class="btn-outline" onclick="openSupportModal()">💬 Поддержка</a>
+        </div>
+
+        <h3 style="margin-bottom:15px;">Мои наряды</h3>
+        <div id="dressesContainer"><div class="empty-state"><p>Загрузка...</p></div></div>
+    </div>
+
+    <!-- Модалка добавления -->
+    <div class="modal-overlay" id="dressFormModal">
+        <div class="modal"><div class="modal__header"><h3 class="modal__title">Добавить наряд</h3><button class="modal__close" onclick="closeDressFormModal()">&times;</button></div>
+            <div class="modal__body" id="dressFormBody">
+                <div class="dress-item" id="dressItem1">
+                    <div class="dress-item-header"><span>Наряд 1</span></div>
+                    <div class="form-group"><label class="form-label">Название *</label><input type="text" class="form-input item-title"></div>
+                    <div class="form-group"><label class="form-label">Описание</label><textarea class="form-input item-desc" rows="1"></textarea></div>
+                    <div class="form-group"><label class="form-label">Цена за день (₽) *</label><input type="number" class="form-input item-price"></div>
+                    <div class="form-group"><label class="form-label">Категория</label><select class="form-select item-category"><option value="wedding">Свадебное</option><option value="evening">Вечернее</option><option value="suit">Костюм</option><option value="accessories">Аксессуары</option></select></div>
+                    <div class="form-group"><label class="form-label">Размеры *</label><div style="display:flex;gap:10px;flex-wrap:wrap;"><label><input type="checkbox" class="item-size" value="S"> S</label><label><input type="checkbox" class="item-size" value="M"> M</label><label><input type="checkbox" class="item-size" value="L"> L</label><label><input type="checkbox" class="item-size" value="XL"> XL</label></div></div>
+                    <div class="form-group">
+                        <label class="form-label">Фото *</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <button type="button" class="btn-add" style="margin:0;padding:8px 14px;font-size:12px;" onclick="document.getElementById('fileInputdressItem1').click()">Выбрать фото</button>
+                            <span class="file-count" style="font-size:12px;color:#999;">0 фото</span>
+                        </div>
+                        <input type="file" id="fileInputdressItem1" style="display:none;" accept="image/*" multiple onchange="addFilesToItem('dressItem1', this)">
+                        <div class="file-preview" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"></div>
+                    </div>
+                </div>
+                <div id="additionalItems"></div>
+                <button type="button" class="btn-confirm" style="background:#5C3D2E;margin-bottom:8px;" onclick="addAnotherItem()">+ Ещё наряд</button>
+                <button class="btn-confirm" onclick="saveAllDresses()">Добавить всё</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка редактирования -->
+    <div class="modal-overlay" id="editFormModal">
+        <div class="modal"><div class="modal__header"><h3 class="modal__title">Редактировать наряд</h3><button class="modal__close" onclick="closeEditFormModal()">&times;</button></div>
+            <div class="modal__body">
+                <input type="hidden" id="editId">
+                <div class="form-group"><label class="form-label">Название *</label><input type="text" id="editTitle" class="form-input"></div>
+                <div class="form-group"><label class="form-label">Описание</label><textarea id="editDesc" class="form-input" rows="2"></textarea></div>
+                <div class="form-group"><label class="form-label">Цена за день (₽) *</label><input type="number" id="editPrice" class="form-input"></div>
+                <div class="form-group"><label class="form-label">Категория</label><select id="editCategory" class="form-select"><option value="wedding">Свадебное</option><option value="evening">Вечернее</option><option value="suit">Костюм</option><option value="accessories">Аксессуары</option></select></div>
+                <div class="form-group"><label class="form-label">Размеры *</label><div style="display:flex;gap:10px;"><label><input type="checkbox" class="edit-size" value="S"> S</label><label><input type="checkbox" class="edit-size" value="M"> M</label><label><input type="checkbox" class="edit-size" value="L"> L</label><label><input type="checkbox" class="edit-size" value="XL"> XL</label></div></div>
+                <div class="form-group">
+                    <label class="form-label">Новые фото (оставьте пустым чтобы не менять)</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <button type="button" class="btn-add" style="margin:0;padding:8px 14px;font-size:12px;" onclick="document.getElementById('editFileInput').click()">Выбрать фото</button>
+                        <span id="editFileCount" style="font-size:12px;color:#999;">0 фото</span>
+                    </div>
+                    <input type="file" id="editFileInput" style="display:none;" accept="image/*" multiple onchange="addEditFiles(this)">
+                    <div id="editFilePreview" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"></div>
+                    <p style="font-size:11px;color:#999;margin-top:4px;">Текущие фото:</p>
+                    <div id="currentPhotos" style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;"></div>
+                </div>
+                <button class="btn-confirm" onclick="saveEdit()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка поддержки -->
+    <div class="modal-overlay" id="supportModal" style="display:none;">
+        <div class="modal"><div class="modal__header"><h3 class="modal__title">Поддержка</h3><button class="modal__close" onclick="closeSupportModal()">&times;</button></div>
+            <div class="modal__body">
+                <input type="text" id="supportName" class="form-input" placeholder="Ваше имя" style="margin-bottom:8px;">
+                <input type="email" id="supportEmail" class="form-input" placeholder="Ваш email" style="margin-bottom:8px;">
+                <textarea id="supportMessage" class="form-input" rows="3" placeholder="Ваше сообщение..." style="margin-bottom:8px;"></textarea>
+                <button class="btn-confirm" onclick="sendSupportMessage()">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-backdrop" id="toastBackdrop"></div>
+    <div class="toast-overlay" id="toastOverlay">
+        <div class="toast" id="toast"><div class="toast__icon-wrap" id="toastIcon"></div><div class="toast__divider"></div><div class="toast__message" id="toastMessage"></div><button class="toast__close" id="toastClose">Понятно</button></div>
+    </div>
+
+    <script>
+        let itemCount = 1;
+        let selectedFiles = { 'dressItem1': [] };
+        let editSelectedFiles = [];
+        const tto = document.getElementById('toastOverlay'), ttb = document.getElementById('toastBackdrop'), ttt = document.getElementById('toast'), tti = document.getElementById('toastIcon'), ttm = document.getElementById('toastMessage'), ttc = document.getElementById('toastClose');
+        let tTimer = null;
+
+        function showToast(m, e) {
+            if (tTimer) clearTimeout(tTimer); ttt.classList.remove('toast--success', 'toast--error');
+            ttt.classList.add(e ? 'toast--error' : 'toast--success'); tti.textContent = e ? '✗' : '✓'; ttm.textContent = m;
+            tto.classList.add('toast-overlay--show'); ttb.classList.add('toast-backdrop--show');
+            tTimer = setTimeout(() => { tto.classList.remove('toast-overlay--show'); ttb.classList.remove('toast-backdrop--show'); }, 4000);
+        }
+        ttc.addEventListener('click', () => { tto.classList.remove('toast-overlay--show'); ttb.classList.remove('toast-backdrop--show'); });
+        ttb.addEventListener('click', () => { tto.classList.remove('toast-overlay--show'); ttb.classList.remove('toast-backdrop--show'); });
+
+        async function checkAuth() { if (!(await (await fetch('/api/me')).json()).loggedIn) window.location.href = '/'; }
+
+        async function loadStats() {
+            const me = await (await fetch('/api/me')).json();
+            if (me.loggedIn) {
+                document.getElementById('profileName').textContent = me.user.name;
+                const bookings = await (await fetch('/api/bookings')).json();
+                if (bookings.bookings) {
+                    document.getElementById('statOrders').textContent = bookings.bookings.length;
+                    document.getElementById('statPaid').textContent = bookings.bookings.filter(b => b.status === 'paid').length;
+                    document.getElementById('statReturns').textContent = bookings.bookings.filter(b => b.return_status === 'confirmed').length;
+                }
+                const usersRes = await fetch('/api/admin/users');
+                const usersData = await usersRes.json();
+                if (usersData.success) {
+                    const u = usersData.users.find(u => u.id === me.user.id);
+                    if (u) { document.getElementById('profileEmail').textContent = u.email; document.getElementById('profilePhone').textContent = u.phone || 'не указан'; }
+                }
+            }
+        }
+
+        async function loadMyDresses() {
+            const res = await fetch('/api/my-dresses'); const data = await res.json();
+            const c = document.getElementById('dressesContainer');
+            if (!data.dresses.length) { c.innerHTML = '<div class="empty-state"><p>У вас пока нет нарядов</p></div>'; return; }
+            c.innerHTML = '<div class="dresses-grid">' + data.dresses.map(d => `<div class="dress-card">
+                <img src="${(d.image_url||'').split(',')[0]||''}" class="dress-card-img" onerror="this.style.display='none';">
+                <div class="dress-card-body"><h3>${d.title}</h3><p class="price">${d.price_per_day.toLocaleString('ru-RU')} ₽/день</p>
+                <p class="info">${d.description}</p><p class="info">Размеры: ${d.sizes} | ${d.category}</p>
+                <span class="badge ${d.status==='active'?'badge-active':'badge-hidden'}">${d.status==='active'?'Активен':'В прокате'}</span>
+                <div class="dress-card-actions"><button class="btn-edit" onclick="editDress(${d.id})">✎</button><button class="btn-delete-card" onclick="deleteDress(${d.id})">✕</button></div></div>
+            </div>`).join('') + '</div>';
+        }
+
+        function openAddDressModal() {
+            itemCount = 1; selectedFiles = { 'dressItem1': [] };
+            document.getElementById('additionalItems').innerHTML = '';
+            const item1 = document.getElementById('dressItem1');
+            item1.querySelector('.item-title').value = ''; item1.querySelector('.item-desc').value = '';
+            item1.querySelector('.item-price').value = ''; item1.querySelector('.item-category').value = 'wedding';
+            item1.querySelectorAll('.item-size').forEach(cb => cb.checked = false);
+            item1.querySelector('.file-preview').innerHTML = ''; item1.querySelector('.file-count').textContent = '0 фото';
+            document.getElementById('dressFormModal').style.display = 'flex';
+        }
+        function closeDressFormModal() { document.getElementById('dressFormModal').style.display = 'none'; }
+        document.getElementById('dressFormModal').addEventListener('click', function(e) { if (e.target === this) closeDressFormModal(); });
+
+        function addFilesToItem(itemId, input) {
+            if (!selectedFiles[itemId]) selectedFiles[itemId] = [];
+            for (let f of input.files) {
+                if (selectedFiles[itemId].length >= 5) { showToast('Максимум 5 фото', true); break; }
+                selectedFiles[itemId].push(f);
+            }
+            input.value = ''; renderItemPreview(itemId);
+        }
+        function renderItemPreview(itemId) {
+            const item = document.getElementById(itemId); if (!item) return;
+            const preview = item.querySelector('.file-preview'), count = item.querySelector('.file-count');
+            const files = selectedFiles[itemId] || []; preview.innerHTML = ''; count.textContent = files.length + ' фото';
+            files.forEach((f, i) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div'); div.style.cssText = 'position:relative;display:inline-block;';
+                    div.innerHTML = `<img src="${e.target.result}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #ddd;"><button style="position:absolute;top:-5px;right:-5px;background:#C62828;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;" onclick="removeItemFile('${itemId}', ${i})">✕</button>`;
+                    preview.appendChild(div);
+                };
+                reader.readAsDataURL(f);
+            });
+        }
+        function removeItemFile(itemId, index) { selectedFiles[itemId].splice(index, 1); renderItemPreview(itemId); }
+
+        function addAnotherItem() {
+            itemCount++; const id = 'dressItem' + itemCount; selectedFiles[id] = [];
+            const div = document.createElement('div'); div.className = 'dress-item'; div.id = id;
+            div.innerHTML = `<div class="dress-item-header"><span>Наряд ${itemCount}</span><button onclick="this.closest('.dress-item').remove(); delete selectedFiles['${id}'];">✕</button></div>
+                <div class="form-group"><label class="form-label">Название *</label><input type="text" class="form-input item-title"></div>
+                <div class="form-group"><label class="form-label">Описание</label><textarea class="form-input item-desc" rows="1"></textarea></div>
+                <div class="form-group"><label class="form-label">Цена за день (₽) *</label><input type="number" class="form-input item-price"></div>
+                <div class="form-group"><label class="form-label">Категория</label><select class="form-select item-category"><option value="wedding">Свадебное</option><option value="evening">Вечернее</option><option value="suit">Костюм</option><option value="accessories">Аксессуары</option></select></div>
+                <div class="form-group"><label class="form-label">Размеры *</label><div style="display:flex;gap:10px;flex-wrap:wrap;"><label><input type="checkbox" class="item-size" value="S"> S</label><label><input type="checkbox" class="item-size" value="M"> M</label><label><input type="checkbox" class="item-size" value="L"> L</label><label><input type="checkbox" class="item-size" value="XL"> XL</label></div></div>
+                <div class="form-group"><label class="form-label">Фото *</label><div style="display:flex;gap:8px;align-items:center;"><button type="button" class="btn-add" style="margin:0;padding:8px 14px;font-size:12px;" onclick="document.getElementById('fileInput${id}').click()">Выбрать фото</button><span class="file-count" style="font-size:12px;color:#999;">0 фото</span></div><input type="file" id="fileInput${id}" style="display:none;" accept="image/*" multiple onchange="addFilesToItem('${id}', this)"><div class="file-preview" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"></div></div>`;
+            document.getElementById('additionalItems').appendChild(div);
+        }
+
+        async function saveAllDresses() {
+            const items = document.querySelectorAll('#dressFormBody .dress-item'); let count = 0, hasError = false;
+            for (let item of items) {
+                const id = item.id, title = item.querySelector('.item-title')?.value.trim(), price = item.querySelector('.item-price')?.value.trim();
+                const sizes = []; item.querySelectorAll('.item-size:checked').forEach(cb => sizes.push(cb.value));
+                const files = selectedFiles[id] || [];
+                if (!title) { showToast('Заполните название', true); hasError = true; break; }
+                if (!price || parseInt(price) <= 0) { showToast('Укажите корректную цену', true); hasError = true; break; }
+                if (sizes.length === 0) { showToast('Выберите размеры', true); hasError = true; break; }
+                if (files.length === 0) { showToast('Загрузите фото', true); hasError = true; break; }
+                const fd = new FormData();
+                fd.append('title', title); fd.append('description', item.querySelector('.item-desc')?.value.trim() || '');
+                fd.append('price_per_day', price); fd.append('category', item.querySelector('.item-category')?.value || 'wedding');
+                fd.append('sizes', sizes.join(', '));
+                for (let f of files) fd.append('images', f);
+                await fetch('/api/dresses', { method: 'POST', body: fd }); count++;
+            }
+            if (!hasError && count > 0) { showToast(`Добавлено ${count} нарядов`, false); closeDressFormModal(); loadMyDresses(); }
+        }
+
+        function addEditFiles(input) {
+            for (let f of input.files) { if (editSelectedFiles.length >= 5) { showToast('Максимум 5 фото', true); break; } editSelectedFiles.push(f); }
+            input.value = ''; renderEditPreview();
+        }
+        function renderEditPreview() {
+            const p = document.getElementById('editFilePreview'), c = document.getElementById('editFileCount');
+            p.innerHTML = ''; c.textContent = editSelectedFiles.length + ' фото';
+            editSelectedFiles.forEach((f, i) => {
+                const r = new FileReader(); r.onload = e => {
+                    const d = document.createElement('div'); d.style.cssText = 'position:relative;display:inline-block;';
+                    d.innerHTML = `<img src="${e.target.result}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #ddd;"><button style="position:absolute;top:-5px;right:-5px;background:#C62828;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;" onclick="removeEditFile(${i})">✕</button>`;
+                    p.appendChild(d);
+                }; r.readAsDataURL(f);
+            });
+        }
+        function removeEditFile(index) { editSelectedFiles.splice(index, 1); renderEditPreview(); }
+
+        async function editDress(id) {
+            const res = await fetch('/api/my-dresses'); const d = (await res.json()).dresses.find(d => d.id === id);
+            if (!d) return; editSelectedFiles = [];
+            document.getElementById('editId').value = id; document.getElementById('editTitle').value = d.title;
+            document.getElementById('editDesc').value = d.description; document.getElementById('editPrice').value = d.price_per_day;
+            document.getElementById('editCategory').value = d.category;
+            document.querySelectorAll('.edit-size').forEach(cb => cb.checked = d.sizes.split(',').map(s => s.trim()).includes(cb.value));
+            document.getElementById('editFilePreview').innerHTML = ''; document.getElementById('editFileCount').textContent = '0 фото';
+            const cur = document.getElementById('currentPhotos'); cur.innerHTML = '';
+            if (d.image_url) {
+                window._currentPhotos = d.image_url.split(',');
+                window._currentPhotos.forEach((src, i) => {
+                    const div = document.createElement('div'); div.style.cssText = 'position:relative;display:inline-block;';
+                    div.innerHTML = `<img src="${src}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #ddd;"><button style="position:absolute;top:-5px;right:-5px;background:#C62828;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;" onclick="deleteCurrentPhoto(${id}, ${i})">✕</button>`;
+                    cur.appendChild(div);
+                });
+            } else { window._currentPhotos = []; cur.innerHTML = '<span style="font-size:12px;color:#999;">Нет фото</span>'; }
+            document.getElementById('editFormModal').style.display = 'flex';
+        }
+        function closeEditFormModal() { document.getElementById('editFormModal').style.display = 'none'; }
+        document.getElementById('editFormModal').addEventListener('click', function(e) { if (e.target === this) closeEditFormModal(); });
+
+        async function deleteCurrentPhoto(dressId, photoIndex) {
+            const imgs = window._currentPhotos || [];
+            if (imgs.length <= 1 && editSelectedFiles.length === 0) { showToast('Нельзя удалить единственное фото. Добавьте новое сначала.', true); return; }
+            if (!confirm('Удалить это фото?')) return;
+            imgs.splice(photoIndex, 1); window._currentPhotos = imgs;
+            const fd = new FormData();
+            fd.append('title', document.getElementById('editTitle').value);
+            fd.append('description', document.getElementById('editDesc').value);
+            fd.append('price_per_day', document.getElementById('editPrice').value);
+            fd.append('category', document.getElementById('editCategory').value);
+            const sizes = []; document.querySelectorAll('.edit-size:checked').forEach(cb => sizes.push(cb.value));
+            fd.append('sizes', sizes.join(', ')); fd.append('image_url', imgs.join(','));
+            await fetch('/api/dresses/' + dressId, { method: 'PUT', body: fd });
+            const cur = document.getElementById('currentPhotos'); cur.innerHTML = '';
+            if (imgs.length === 0) { cur.innerHTML = '<span style="font-size:12px;color:#999;">Нет фото</span>'; }
+            else { imgs.forEach((src, i) => { const div = document.createElement('div'); div.style.cssText = 'position:relative;display:inline-block;'; div.innerHTML = `<img src="${src}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #ddd;"><button style="position:absolute;top:-5px;right:-5px;background:#C62828;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;" onclick="deleteCurrentPhoto(${dressId}, ${i})">✕</button>`; cur.appendChild(div); }); }
+        }
+
+        async function saveEdit() {
+            const id = document.getElementById('editId').value, title = document.getElementById('editTitle').value.trim(), price = document.getElementById('editPrice').value.trim();
+            const sizes = []; document.querySelectorAll('.edit-size:checked').forEach(cb => sizes.push(cb.value));
+            if (!title) { showToast('Введите название', true); return; }
+            if (!price || parseInt(price) <= 0) { showToast('Укажите корректную цену', true); return; }
+            if (sizes.length === 0) { showToast('Выберите размеры', true); return; }
+            const fd = new FormData();
+            fd.append('title', title); fd.append('description', document.getElementById('editDesc').value.trim());
+            fd.append('price_per_day', price); fd.append('category', document.getElementById('editCategory').value);
+            fd.append('sizes', sizes.join(', '));
+            for (let f of editSelectedFiles) fd.append('images', f);
+            const data = await (await fetch('/api/dresses/' + id, { method: 'PUT', body: fd })).json();
+            showToast(data.message, !data.success); if (data.success) { closeEditFormModal(); loadMyDresses(); }
+        }
+
+        async function deleteDress(id) { if (!confirm('Удалить?')) return; await fetch('/api/dresses/' + id, { method: 'DELETE' }); loadMyDresses(); }
+
+        function openSupportModal() { document.getElementById('supportModal').style.display = 'flex'; }
+        function closeSupportModal() { document.getElementById('supportModal').style.display = 'none'; }
+        document.getElementById('supportModal').addEventListener('click', function(e) { if (e.target === this) closeSupportModal(); });
+        async function sendSupportMessage() {
+            const name = document.getElementById('supportName').value.trim(), email = document.getElementById('supportEmail').value.trim(), message = document.getElementById('supportMessage').value.trim();
+            if (!name || !email || !message) { showToast('Заполните все поля', true); return; }
+            await fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_name: name, user_email: email, message }) });
+            showToast('Сообщение отправлено!', false); closeSupportModal();
+        }
+
+        async function logout() { await fetch('/api/logout', { method: 'POST' }); window.location.href = '/'; }
+        checkAuth(); loadStats(); loadMyDresses();
+    </script>
+</body>
+</html>
