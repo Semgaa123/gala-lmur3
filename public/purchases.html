@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GalaLMur — Мои покупки</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #EBE3D8; color: #2D2D2D; min-height: 100vh; }
+        .purchases-header { background: #8B6B4A; color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .purchases-header a { color: white; text-decoration: none; font-size: 15px; }
+        .purchases-header .logo { font-size: 26px; font-weight: bold; letter-spacing: 2px; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        .purchases-title { font-size: 28px; margin-bottom: 25px; font-weight: 700; color: #3C2A1E; }
+        
+        .purchases-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+        
+        .purchase-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
+        .purchase-card:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(0,0,0,0.1); }
+        
+        .purchase-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+        .purchase-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .icon-wedding { background: #FDE8E8; }
+        .icon-evening { background: #E8EAF6; }
+        .icon-suit { background: #E8F5E9; }
+        .icon-accessories { background: #FFF3E0; }
+        
+        .purchase-header h3 { font-size: 17px; color: #3C2A1E; flex: 1; margin-left: 12px; }
+        
+        .purchase-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+        .detail-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #666; }
+        .detail-item .detail-icon { font-size: 16px; }
+        
+        .purchase-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #F0E6DD; padding-top: 14px; }
+        .price { font-size: 22px; font-weight: 700; color: #8B6B4A; }
+        
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .badge-paid { background: #E8F5E9; color: #2E7D32; }
+        .badge-requested { background: #FFF3E0; color: #E65100; }
+        .badge-confirmed { background: #C8E6C9; color: #1B5E20; }
+        .badge-rejected { background: #FFCDD2; color: #C62828; }
+        
+        .btn-return { padding: 8px 18px; background: #E65100; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .btn-return:hover { background: #BF360C; }
+        .btn-return:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .empty-state { text-align: center; padding: 80px; color: #999; font-size: 18px; }
+        .empty-state a { color: #8B6B4A; font-weight: 600; text-decoration: none; }
+        .empty-state .empty-icon { font-size: 64px; margin-bottom: 15px; }
+        
+        .toast-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); z-index: 9998; opacity: 0; pointer-events: none; }
+        .toast-backdrop--show { opacity: 1; pointer-events: all; }
+        .toast-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 9999; pointer-events: none; opacity: 0; }
+        .toast-overlay--show { opacity: 1; pointer-events: all; }
+        .toast { background: #fff; border-radius: 20px; padding: 32px; text-align: center; max-width: 440px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+        .toast__icon-wrap { width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: bold; }
+        .toast--success .toast__icon-wrap { background: #E8F5E9; color: #4CAF50; }
+        .toast--error .toast__icon-wrap { background: #FFEBEE; color: #f44336; }
+        .toast__divider { width: 48px; height: 3px; border-radius: 2px; margin: 0 auto 16px; }
+        .toast__message { font-size: 15px; margin-bottom: 20px; color: #3C2A1E; }
+        .toast__close { background: #F4EDE4; border: none; padding: 10px 32px; border-radius: 30px; font-size: 14px; font-weight: 600; cursor: pointer; color: #5C3D2E; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal { background: #fff; border-radius: 14px; width: 90%; max-width: 500px; overflow: hidden; }
+        .modal__header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; background: #8B6B4A; color: #fff; }
+        .modal__title { font-size: 18px; font-weight: 600; }
+        .modal__close { background: none; border: none; font-size: 26px; cursor: pointer; color: rgba(255,255,255,0.8); }
+        .modal__body { padding: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 13px; font-weight: 700; color: #8B6B4A; margin-bottom: 5px; text-transform: uppercase; }
+        .form-label .required { color: #C62828; }
+        .form-input { width: 100%; padding: 12px; border: 2px solid #DDD0C0; border-radius: 8px; font-size: 14px; outline: none; }
+        .btn-confirm { width: 100%; padding: 14px; background: #8B6B4A; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+        
+        @media (max-width: 700px) { .purchases-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="purchases-header">
+        <span class="logo">GalaLMur — Мои покупки</span>
+        <div>
+            <a href="/" class="btn-back">← В каталог</a>
+            <a href="cart.html" style="margin-left:25px;">Корзина</a>
+            <a href="cabinet.html" style="margin-left:25px;">Кабинет</a>
+            <a href="#" onclick="logout()" style="margin-left:25px;">Выйти</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 class="purchases-title">📦 Мои покупки</h2>
+        <div id="purchasesContainer"><div class="empty-state"><div class="empty-icon">📭</div>Загрузка...</div></div>
+    </div>
+
+    <!-- Модалка возврата -->
+    <div class="modal-overlay" id="returnModal">
+        <div class="modal"><div class="modal__header"><h3 class="modal__title">Возврат заказа</h3><button class="modal__close" onclick="closeReturnModal()">&times;</button></div>
+            <div class="modal__body">
+                <p id="returnItemName" style="font-weight:600;margin-bottom:15px;"></p>
+                <div class="form-group"><label class="form-label">Причина возврата <span class="required">*</span></label><textarea id="returnReason" class="form-input" rows="3" placeholder="Опишите причину..."></textarea></div>
+                <div class="form-group"><label class="form-label">Фото <span class="required">*</span></label><input type="file" id="returnPhoto" class="form-input" accept="image/*"></div>
+                <p style="font-size:11px;color:#999;">Загрузите фото, подтверждающее проблему</p>
+                <button class="btn-confirm" onclick="submitReturn()">Отправить заявку</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-backdrop" id="toastBackdrop"></div>
+    <div class="toast-overlay" id="toastOverlay">
+        <div class="toast" id="toast"><div class="toast__icon-wrap" id="toastIcon"></div><div class="toast__divider"></div><div class="toast__message" id="toastMessage"></div><button class="toast__close" id="toastClose">Понятно</button></div>
+    </div>
+
+    <script>
+        let returnBookingId = null;
+        const to = document.getElementById('toastOverlay'), tb = document.getElementById('toastBackdrop'), tt = document.getElementById('toast'), ti = document.getElementById('toastIcon'), tm = document.getElementById('toastMessage'), tc = document.getElementById('toastClose');
+        let ttimer = null;
+
+        function showToast(m, e) {
+            if (ttimer) clearTimeout(ttimer);
+            tt.classList.remove('toast--success', 'toast--error'); tt.classList.add(e ? 'toast--error' : 'toast--success');
+            ti.textContent = e ? '✗' : '✓'; tm.textContent = m;
+            to.classList.add('toast-overlay--show'); tb.classList.add('toast-backdrop--show');
+            ttimer = setTimeout(() => { to.classList.remove('toast-overlay--show'); tb.classList.remove('toast-backdrop--show'); }, 4000);
+        }
+        tc.addEventListener('click', () => { to.classList.remove('toast-overlay--show'); tb.classList.remove('toast-backdrop--show'); });
+        tb.addEventListener('click', () => { to.classList.remove('toast-overlay--show'); tb.classList.remove('toast-backdrop--show'); });
+
+        async function checkAuth() { if (!(await (await fetch('/api/me')).json()).loggedIn) window.location.href = '/'; }
+
+        function getCategoryIcon(cat) {
+            const icons = { wedding: '👰', evening: '💃', suit: '🤵', accessories: '💍' };
+            const classes = { wedding: 'icon-wedding', evening: 'icon-evening', suit: 'icon-suit', accessories: 'icon-accessories' };
+            return { icon: icons[cat] || '👗', cls: classes[cat] || 'icon-wedding' };
+        }
+
+        function getReturnBadge(b) {
+            if (!b.return_status) return '<span class="badge badge-paid">✅ Оплачен</span>';
+            if (b.return_status === 'requested') return '<span class="badge badge-requested">⏳ На рассмотрении</span>';
+            if (b.return_status === 'confirmed') return '<span class="badge badge-confirmed">✔ Возврат одобрен</span>';
+            if (b.return_status === 'rejected') return '<span class="badge badge-rejected">✖ Возврат отклонён</span>';
+            return '';
+        }
+
+        async function loadPurchases() {
+            const res = await fetch('/api/purchases'); const data = await res.json();
+            const c = document.getElementById('purchasesContainer');
+            if (!data.purchases || !data.purchases.length) {
+                c.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div>У вас пока нет покупок<br><a href="/">Перейти в каталог</a></div>';
+                return;
+            }
+            c.innerHTML = '<div class="purchases-grid">' + data.purchases.map(b => {
+                const ci = getCategoryIcon(b.category || 'wedding');
+                return `<div class="purchase-card">
+                    <div class="purchase-header">
+                        <div class="purchase-icon ${ci.cls}">${ci.icon}</div>
+                        <h3>${b.dress}</h3>
+                        <div>${getReturnBadge(b)}</div>
+                    </div>
+                    <div class="purchase-details">
+                        <div class="detail-item"><span class="detail-icon">📏</span> Размер: ${b.size}</div>
+                        <div class="detail-item"><span class="detail-icon">📅</span> ${b.date_start} — ${b.date_end}</div>
+                        <div class="detail-item"><span class="detail-icon">⏱</span> ${b.days} дн.</div>
+                        <div class="detail-item"><span class="detail-icon">🚚</span> ${b.delivery_type === 'pickup' ? 'Самовывоз' : 'Доставка'}</div>
+                    </div>
+                    <div class="purchase-footer">
+                        <span class="price">${b.total}</span>
+                        ${b.status === 'paid' && !b.return_status ? `<button class="btn-return" onclick="openReturnModal(${b.id}, '${b.dress.replace(/'/g, "\\'")}')">↩ Вернуть</button>` : ''}
+                    </div>
+                </div>`;
+            }).join('') + '</div>';
+        }
+
+        window.openReturnModal = function(id, name) {
+            returnBookingId = id;
+            document.getElementById('returnItemName').textContent = 'Заказ #' + id + ': ' + name;
+            document.getElementById('returnReason').value = '';
+            document.getElementById('returnPhoto').value = '';
+            document.getElementById('returnModal').style.display = 'flex';
+        };
+        window.closeReturnModal = function() { document.getElementById('returnModal').style.display = 'none'; };
+        document.getElementById('returnModal').addEventListener('click', function(e) { if (e.target === this) closeReturnModal(); });
+        window.submitReturn = async function() {
+            const reason = document.getElementById('returnReason').value.trim();
+            const photo = document.getElementById('returnPhoto').files[0];
+            if (!reason) { showToast('Опишите причину возврата', true); return; }
+            if (!photo) { showToast('Загрузите фото', true); return; }
+            const fd = new FormData(); fd.append('return_reason', reason); fd.append('return_photo', photo);
+            const data = await (await fetch('/api/bookings/' + returnBookingId + '/return', { method: 'POST', body: fd })).json();
+            showToast(data.message, !data.success);
+            if (data.success) { closeReturnModal(); loadPurchases(); }
+        };
+
+        async function logout() { await fetch('/api/logout', { method: 'POST' }); window.location.href = '/'; }
+        checkAuth(); loadPurchases();
+    </script>
+</body>
+</html>
